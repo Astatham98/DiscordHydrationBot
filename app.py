@@ -24,26 +24,34 @@ usr_temp_time = {}
 @client.event
 async def on_connect(messaged_list=messaged_list, block_list=block_list):
     # Runs through and prints all the guilds it is connected to
-    for guild in client.guilds:
-        print('connected to {}'.format(guild.name))
-        channel_names = {channel: str(channel.type) for channel in guild.channels} # Finds the names of the channels in the guild
-        channel = None
-        for key, value in channel_names.items(): # iterats through the channel names and tries to find a general channel
-            if key.name.lower() == 'general' and value == 'text':
-                channel = key # If not found No channel will be messaged
+    try:
+        for guild in client.guilds:
+            print('connected to {}'.format(guild.name))
+            channel_names = {channel: str(channel.type) for channel in guild.channels} # Finds the names of the channels in the guild
+            channel = None
+            for key, value in channel_names.items(): # iterats through the channel names and tries to find a general channel
+                if key.name.lower() == 'general' and value == 'text':
+                    channel = key # If not found No channel will be messaged
 
-        # Searches for members that aren't bots and are online
-        members = [member for member in guild.members if member.bot is False and str(member.status) != 'offline']
-        message_list = []
-        for member in members:
-            # Goes through members who have never been messaged before and are not blocked and if the channel is not None
-            if member not in block_list and member not in messaged_list and channel is not None:
-                message_list.append(member)
-                user_timing[member] = 60
-        message = '{} - Welcome to hydration bot! \n For help about the bot type ***!hydrate help***'\
-            .format(''.join([x.mention for x in message_list])) # @'s every user possible in one message
-        await channel.send(message)
-        messaged_list += message_list # Updates the global message list
+            # Searches for members that aren't bots and are online
+            members = [member for member in guild.members if member.bot is False and str(member.status) != 'offline']
+            message_list = []
+            for member in members:
+                # Goes through members who have never been messaged before and are not blocked and if the channel is not None
+                if member not in block_list and member not in messaged_list and channel is not None:
+                    message_list.append(member)
+                    user_timing[member] = 60
+
+            message = '{} - Welcome to hydration bot! \n For help about the bot type ***!hydrate help***'\
+                .format(''.join([x.mention for x in message_list])) # @'s every user possible in one message
+            await channel.send(message)
+            messaged_list += message_list # Updates the global message list
+
+            for member in members:
+                await start_timer(member, channel) #Starts the timer for the user in general
+    except AttributeError:
+        await asyncio.sleep(3)
+        await on_connect()
 
 @client.event
 async def on_message(message):
@@ -68,28 +76,41 @@ async def on_message(message):
                                            .format(message.author.name, int(msg)))
             else:
                 start = len(msg)+1
-                for i in range(len(msg)):
+                for i in range(len(msg)): #finds the first digit in the string
                     if msg[i].isdigit():
                         start = i
                         break
                 end = len(msg)+1
                 if start < len(msg):
-                    for j in range(start, len(msg)):
+                    for j in range(start, len(msg)): #finds the last digit in the string after the first
                         if not msg[j].isdigit():
                             end = j
                             break
-                usr_temp_time[message.author] = msg[start:end]
+                usr_temp_time[message.author] = msg[start:end] #adds the new timing to the temp dict
                 await message.channel.send('{}, is {} the correct time? \nPlease reply "Yes" to confirm'
                                            .format(message.author.name, msg[start:end]))
 
     if message.author in usr_temp_time.keys():
-        if message.content.lower().startswith('yes'):
+        if message.content.lower().startswith('yes'): #If the message is yes and the author is in the temp list then add to user timing
             user_timing[message.author] = usr_temp_time.get(message.author)
             await message.channel.send('{}, Your time between notifications have been changed to {}'
                                        .format(message.author.name, usr_temp_time.get(message.author)))
             usr_temp_time.pop(message.author)
-        elif 'timer' not in message.content.lower():
+        elif 'timer' not in message.content.lower(): #Else remove it from the temp timing
             usr_temp_time.pop(message.author)
             await message.channel.send('Please try the command again')
+
+@client.event
+async def start_timer(user, channel=None):
+    if user not in block_list and channel is not None:
+        ml_per_min = 3700/3600
+        while str(user.activity.type) == 'ActivityType.playing':
+            time = user_timing.get(user, 60)
+            await asyncio.sleep(5)
+            await channel.send(f"{user.mention}, I hope you're enjoying {user.activity} but don't forget to stay hydrated."
+                               f"\nYou should have drunk {int(round(time*ml_per_min)*1.5)}ml since the last mention.")
+            await asyncio.sleep(time * 60)
+
+
 
 client.run(my_key)
