@@ -1,8 +1,9 @@
 # DiscordHydrationBot
 A simple discord bot to remind you to stay hydrated!
 
-##ToDO
-- [ ] Complete command to change user timer
-- [ ] Complete command to have user not recieve messages
+#ToDO
+- [x] Complete command to change user timer
+- [x] Complete command to have user not recieve messages
+- [ ] complete timer for each user
 - [ ] Merge into databse to account for bot restarts
 
