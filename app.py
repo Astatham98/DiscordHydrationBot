@@ -2,12 +2,17 @@ import discord
 import os
 import asyncio
 import re
+from database_bot import databse_bot
+
 
 file = open('key.txt', 'r')
 my_key = file.read()
 file.close()
 
 client = discord.Client()
+
+db_dir = r"c:\users\Steven\PycharmProjects\HydrationBot\DiscordHydrationBot\BOT.db"
+bot = databse_bot(db_dir)
 
 
 
@@ -20,7 +25,6 @@ block_list = []
 messaged_list = []
 user_timing = {}
 usr_temp_time = {}
-currently_playing = {}
 
 @client.event
 async def on_connect(messaged_list=messaged_list, block_list=block_list):
@@ -37,6 +41,7 @@ async def on_connect(messaged_list=messaged_list, block_list=block_list):
         members = [member for member in guild.members if member.bot is False and str(member.status) != 'offline']
         message_list = []
         for member in members:
+            print(type(member))
             # Goes through members who have never been messaged before and are not blocked and if the channel is not None
             if member not in block_list and member not in messaged_list and channel is not None:
                 message_list.append(member)
@@ -46,6 +51,10 @@ async def on_connect(messaged_list=messaged_list, block_list=block_list):
                 .format(''.join([x.mention for x in message_list])) # @'s every user possible in one message
             await channel.send(message)
             messaged_list += message_list # Updates the global message list
+
+        for user in messaged_list:
+            bot.insert_values([str(user), 1, 60, 0])
+        bot.read_database()
 
         await start_timer(channel) #Starts the timer for the user in general
 
@@ -61,12 +70,14 @@ async def on_message(message):
 
         if msg.startswith('stop'):
             block_list.append(message.author) # Adds the user to the block list and sends a notification
+            bot.update_ban(str(message.author), True)
             await message.channel.send('{}, you will no longer receive notifications from this bot.'.format(message.author.name))
 
         if msg.startswith('timer'):
             msg = msg.replace('timer', '').lstrip().rstrip() #repalces timer and any rogue spaces from the front and back
             if msg.isdigit():
                 user_timing[message.author] = int(msg) #If the entire message is a digit make the user timing that
+                bot.update_timer(str(message.author), int(msg))
                 #Confirmation message
                 await message.channel.send('{}, Your time between notifications have been changed to {}'
                                            .format(message.author.name, int(msg)))
@@ -89,6 +100,7 @@ async def on_message(message):
     if message.author in usr_temp_time.keys():
         if message.content.lower().startswith('yes'): #If the message is yes and the author is in the temp list then add to user timing
             user_timing[message.author] = usr_temp_time.get(message.author)
+            bot.update_timer(str(message.author), usr_temp_time.get(message.author))
             await message.channel.send('{}, Your time between notifications have been changed to {}'
                                        .format(message.author.name, usr_temp_time.get(message.author)))
             usr_temp_time.pop(message.author)
