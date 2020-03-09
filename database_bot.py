@@ -75,6 +75,12 @@ class databse_bot():
         with conn:
             self.select_all_tasks(conn)
 
+    def read_user(self, user):
+        conn = self.create_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM bot WHERE user = ?", [user])
+        print([x for x in cur])
+
     def restart_database(self):
         conn = self.create_connection()
         cur = conn.cursor()
@@ -90,7 +96,7 @@ class databse_bot():
         curr = conn.cursor()
         curr.execute(sql, [timer, user])
         conn.commit()
-        self.read_database()
+        self.read_user(user)
 
     def update_ban(self, user, ban_bool):
         sql = """ UPDATE bot
@@ -104,7 +110,7 @@ class databse_bot():
         curr = conn.cursor()
         curr.execute(sql, [ban_bool_int, user])
         conn.commit()
-        self.read_database()
+        self.read_user(user)
 
 
     def update_messaged(self, user, messaged_bool):
@@ -119,7 +125,26 @@ class databse_bot():
         curr = conn.cursor()
         curr.execute(sql, [messaged_int, user])
         conn.commit()
-        self.read_database()
+        self.read_user(user)
 
+    def get_messaged_users(self):
+        sql = """SElECT user FROM bot WHERE messaged = 1"""
+        conn = self.create_connection()
+        curr = conn.cursor()
+        rows = curr.execute(sql)
+        return [x[0] for x in rows]
 
+    def get_blocked_users(self):
+        sql = """SElECT user FROM bot WHERE blocked = 1"""
+        conn = self.create_connection()
+        curr = conn.cursor()
+        rows = curr.execute(sql)
+        return [x[0] for x in rows]
+
+    def get_user_timings(self):
+        sql = """SElECT user, user_time FROM bot"""
+        conn = self.create_connection()
+        curr = conn.cursor()
+        rows = curr.execute(sql)
+        return {x[0]: x[1] for x in rows}
 # insert_values(r"c:\users\Steven\PycharmProjects\HydrationBot\DiscordHydrationBot\BOT.db")
