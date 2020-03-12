@@ -5,6 +5,6 @@ A simple discord bot to remind you to stay hydrated!
 - [x] Complete command to change user timer
 - [x] Complete command to have user not recieve messages
 - [x] complete timer for each user
-- [ ] Merge into databse to account for bot restarts
+- [x] Merge into databse to account for bot restarts
 - [ ] Ability for owner to change the channel the bot posts in
-
+- [x] Make the bot dm the user instead of @ at startup

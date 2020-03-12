@@ -21,13 +21,13 @@ async def on_ready():
     print('{} has connected to discord'.format(client.user))
 
 
-block_list = []
-messaged_list = []
-user_timing = {}
+block_list = bot.get_blocked_users()
+messaged_list = bot.get_messaged_users()
+user_timing = bot.get_user_timings()
 usr_temp_time = {}
 
 @client.event
-async def on_connect(messaged_list=messaged_list, block_list=block_list):
+async def on_connect(messaged_list=messaged_list):
     # Runs through and prints all the guilds it is connected to
     for guild in client.guilds:
         print('connected to {}'.format(guild.name))
@@ -38,21 +38,26 @@ async def on_connect(messaged_list=messaged_list, block_list=block_list):
                 channel = key # If not found No channel will be messaged
 
         # Searches for members that aren't bots and are online
-        members = [member for member in guild.members if member.bot is False and str(member.status) != 'offline']
+        members = [member for member in guild.members if member.bot is False]
         message_list = []
         for member in members:
-            print(type(member))
+            if str(member) in user_timing:
+                user_timing[member] = user_timing.pop(str(member))
             # Goes through members who have never been messaged before and are not blocked and if the channel is not None
-            if member not in block_list and member not in messaged_list and channel is not None:
+            if str(member) not in block_list and str(member) not in messaged_list and channel is not None and str(member.status) != 'offline':
                 message_list.append(member)
                 user_timing[member] = 60 #Adds a default member to every hour
         if len(message_list) > 0:
-            message = '{} - Welcome to hydration bot! \n For help about the bot type ***!hydrate help***'\
-                .format(''.join([x.mention for x in message_list])) # @'s every user possible in one message
-            await channel.send(message)
-            messaged_list += message_list # Updates the global message list
+            for member in message_list:
+                dm_channel = await member.create_dm() #Creates a dm for the non-messaged users
+                await dm_channel.send('{} - Welcome to hydration bot in {}! \n ' # sends the users a message
+                                      'For help about the bot type ***!hydrate help*** in the channel.'
+                                      .format(member.name, guild.name))
 
-        for user in messaged_list:
+            #message = '{} - Welcome to hydration bot! \n For help about the bot type ***!hydrate help***'\
+             #   .format(''.join([x.mention for x in message_list])) # @'s every user possible in one message
+
+        for user in message_list:
             bot.insert_values([str(user), 1, 60, 0])
         bot.read_database()
 
@@ -110,6 +115,7 @@ async def on_message(message):
 
 @client.event
 async def start_timer(channel=None):
+    print('started_timer')
     currently_playing = {user: user_timing.get(user, 60) for user in user_timing if user not in block_list
                          and str(user.status) != 'offline' and user.activity is not None} # Creates a list of playing players
     original_time = user_timing.copy() # a copy of the original user timings
