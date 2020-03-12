@@ -144,6 +144,7 @@ async def start_timer(channel=None):
     currently_playing = {user: user_timing.get(user, 60) for user in user_timing if user not in block_list
                          and str(user.status) != 'offline' and user.activity is not None} # Creates a list of playing players
     original_time = user_timing.copy() # a copy of the original user timings
+    original_guild = guild_channel.copy()
     ml_per_min = 3700/3600 # The ml per hour that should be drunk
     while True:
         to_pop = []
@@ -153,6 +154,10 @@ async def start_timer(channel=None):
             if original_time.get(user, 60) != user_timing.get(user, 60):
                 original_time[user] = user_timing.get(user, 60) #Changes the original timer to the current one
                 to_change[user] = user_timing.get(user, 60) - 1 #Changes the user timer and subtracts 1 for the minute that would go by
+
+            if original_guild.get(user.guild) != guild_channel.get(user.guild):
+                original_guild[user.guild] = guild_channel.get(user.guild)
+                channel = guild_channel.get(user.guild)
 
             if time == 0:
                 try:
