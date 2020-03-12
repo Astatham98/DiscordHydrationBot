@@ -44,16 +44,32 @@ class databse_bot():
         else:
             print("Error! cannot create the database connection.")
 
-    def insert_values(self, values):
+    def create_guild_table(self):
+        sql_create_guild_table = """CREATE TABLE IF NOT EXISTS guilds(
+                                            guild text PRIMARY KEY NOT NULL,
+                                            channel text NOT NULL
+                                            )"""
+        conn = self.create_connection()
+
+        # create tables
+        print(conn)
+        if conn is not None:
+            # create table
+            self.create_table(conn, sql_create_guild_table)
+
+        else:
+            print("Error! cannot create the database connection.")
+
+    def insert_values_bot(self, values):
         conn = self.create_connection()
         with conn:
             # tasks
             if type(values) == list and len(values) == 4:
-                self.create_task(conn, values)
+                self.create_bot(conn, values)
             else:
                 print('Incorrect format')
 
-    def create_task(self, conn, task):
+    def create_bot(self, conn, task):
 
         sql = ''' INSERT INTO bot(user,messaged,user_time,blocked)
                   VALUES(?,?,?,?) '''
@@ -61,9 +77,34 @@ class databse_bot():
         cur.execute(sql, task)
         return cur.lastrowid
 
-    def select_all_tasks(self, conn):
+    def create_guild(self, conn, task):
+
+        sql = ''' INSERT INTO guilds(guild,channel) VALUES(?,?) '''
+        cur = conn.cursor()
+        cur.execute(sql, task)
+        return cur.lastrowid
+
+    def insert_values_guild(self, values):
+        conn = self.create_connection()
+        with conn:
+            # tasks
+            if type(values) == list and len(values) == 2:
+                self.create_guild(conn, values)
+            else:
+                print('Incorrect format')
+
+    def select_all_bot_tasks(self, conn):
         cur = conn.cursor()
         cur.execute("SELECT * FROM bot")
+
+        rows = cur.fetchall()
+
+        for row in rows:
+            print(row)
+
+    def select_all_guild_tasks(self, conn):
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM guilds")
 
         rows = cur.fetchall()
 
@@ -73,7 +114,10 @@ class databse_bot():
     def read_database(self):
         conn = self.create_connection()
         with conn:
-            self.select_all_tasks(conn)
+            print('--BOT DATABASE--')
+            self.select_all_bot_tasks(conn)
+            print('--GUILD DATABASE--')
+            self.select_all_guild_tasks(conn)
 
     def read_user(self, user):
         conn = self.create_connection()
@@ -81,11 +125,19 @@ class databse_bot():
         cur.execute("SELECT * FROM bot WHERE user = ?", [user])
         print([x for x in cur])
 
+    def read_guild(self, guild):
+        conn = self.create_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM guilds WHERE guild = ?", [guild])
+        print([x for x in cur])
+
     def restart_database(self):
         conn = self.create_connection()
         cur = conn.cursor()
         cur.execute("""DROP TABLE IF EXISTS bot""")
+        cur.execute("""DROP TABLE IF EXISTS guilds""")
         self.create_bot_table()
+        self.create_guild_table()
 
     def update_timer(self, user, timer):
         sql = """ UPDATE bot
@@ -112,7 +164,6 @@ class databse_bot():
         conn.commit()
         self.read_user(user)
 
-
     def update_messaged(self, user, messaged_bool):
         sql = """ UPDATE bot
                   SET messaged = ?
@@ -126,6 +177,17 @@ class databse_bot():
         curr.execute(sql, [messaged_int, user])
         conn.commit()
         self.read_user(user)
+
+    def update_guild(self, guild, channel):
+        sql = """ UPDATE guilds
+                  SET channel = ?
+                  WHERE guild = ?
+        """
+        conn = self.create_connection()
+        curr = conn.cursor()
+        curr.execute(sql, [channel, guild])
+        conn.commit()
+        self.read_guild(guild)
 
     def get_messaged_users(self):
         sql = """SElECT user FROM bot WHERE messaged = 1"""
@@ -147,4 +209,14 @@ class databse_bot():
         curr = conn.cursor()
         rows = curr.execute(sql)
         return {x[0]: x[1] for x in rows}
-# insert_values(r"c:\users\Steven\PycharmProjects\HydrationBot\DiscordHydrationBot\BOT.db")
+
+    def get_guilds(self):
+        sql = """SElECT guild, channel FROM guilds"""
+        conn = self.create_connection()
+        curr = conn.cursor()
+        rows = curr.execute(sql)
+        return {x[0]: x[1] for x in rows}
+
+#bot = databse_bot(r"c:\users\Steven\PycharmProjects\HydrationBot\DiscordHydrationBot\BOT.db")
+# #bot.create_bot_table()
+
