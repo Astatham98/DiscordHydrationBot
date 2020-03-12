@@ -10,7 +10,7 @@ file.close()
 
 client = discord.Client()
 
-db_dir = r"c:\users\Steven\PycharmProjects\HydrationBot\DiscordHydrationBot\BOT.db"
+db_dir = r"BOT.db"
 bot = databse_bot(db_dir)
 
 
