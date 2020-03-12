@@ -1,12 +1,11 @@
 import discord
-import json
+import os
 import asyncio
 from database_bot import databse_bot
 
 
-file = open('key.txt', 'r')
-my_key = file.read()
-file.close()
+my_key = os.getenv('DISCORD_KEY')
+
 
 client = discord.Client()
 
@@ -124,8 +123,6 @@ async def on_message(message):
                     await message.channel.send(f"The channel {channel}, either doesn't exist or there is a typo.")
             else:
                 await message.channel.send(f"{message.author.name}, I'm afraid you do not have permission to use this command.")
-
-
 
     if message.author in usr_temp_time.keys():
         if message.content.lower().startswith('yes'): #If the message is yes and the author is in the temp list then add to user timing
