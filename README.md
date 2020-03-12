@@ -1,5 +1,6 @@
 # DiscordHydrationBot
 A simple discord bot to remind you to stay hydrated!
+https://discordapp.com/api/oauth2/authorize?client_id=685681623546593295&permissions=523328&scope=bot - invite link
 
 ## ToDO
 - [x] Complete command to change user timer
