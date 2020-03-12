@@ -1,7 +1,6 @@
 import discord
-import os
+import json
 import asyncio
-import re
 from database_bot import databse_bot
 
 
@@ -17,7 +16,7 @@ bot = databse_bot(db_dir)
 
 
 @client.event
-async def on_ready():
+async def on_connect():
     print('{} has connected to discord'.format(client.user))
 
 
@@ -25,17 +24,26 @@ block_list = bot.get_blocked_users()
 messaged_list = bot.get_messaged_users()
 user_timing = bot.get_user_timings()
 usr_temp_time = {}
+guild_channel = bot.get_guilds()
 
 @client.event
-async def on_connect(messaged_list=messaged_list):
+async def on_ready(messaged_list=messaged_list):
     # Runs through and prints all the guilds it is connected to
     for guild in client.guilds:
         print('connected to {}'.format(guild.name))
         channel_names = {channel: str(channel.type) for channel in guild.channels} # Finds the names of the channels in the guild
-        channel = None
-        for key, value in channel_names.items(): # iterats through the channel names and tries to find a general channel
-            if key.name.lower() == 'general' and value == 'text':
-                channel = key # If not found No channel will be messaged
+        if str(guild) in guild_channel: #Checks if the guild is in the guild channel
+            channel_name = [channel for channel in guild.channels if str(channel) == guild_channel.get(str(guild))][0] #Find channel from channel name
+            guild_channel[guild] = channel_name #Inserts a new entry of type guild: channel
+            guild_channel.pop(str(guild)) #pops the string variant
+            channel = channel_name #Makes channel the channel name
+        else: #If not in the guild channel then do following
+            channel = None
+            for key, value in channel_names.items(): # iterats through the channel names and tries to find a general channel
+                if key.name.lower() == 'general' or key.name.lower == 'bot' and value == 'text':
+                    channel = key # If not found No channel will be messaged
+                    guild_channel[guild] = channel #Insert into the dictionary
+                    bot.insert_values_guild([str(guild), str(channel)]) #Update database
 
         # Searches for members that aren't bots and are online
         members = [member for member in guild.members if member.bot is False]
@@ -47,6 +55,7 @@ async def on_connect(messaged_list=messaged_list):
             if str(member) not in block_list and str(member) not in messaged_list and channel is not None and str(member.status) != 'offline':
                 message_list.append(member)
                 user_timing[member] = 60 #Adds a default member to every hour
+
         if len(message_list) > 0:
             for member in message_list:
                 dm_channel = await member.create_dm() #Creates a dm for the non-messaged users
@@ -54,11 +63,8 @@ async def on_connect(messaged_list=messaged_list):
                                       'For help about the bot type ***!hydrate help*** in the channel.'
                                       .format(member.name, guild.name))
 
-            #message = '{} - Welcome to hydration bot! \n For help about the bot type ***!hydrate help***'\
-             #   .format(''.join([x.mention for x in message_list])) # @'s every user possible in one message
-
         for user in message_list:
-            bot.insert_values([str(user), 1, 60, 0])
+            bot.insert_values_bot([str(user), 1, 60, 0])
         bot.read_database()
 
         await start_timer(channel) #Starts the timer for the user in general
@@ -71,6 +77,7 @@ async def on_message(message):
             embed = discord.Embed(title='Hydration commands', description='A list of useful commands!')
             embed.add_field(name='!hydrate stop', value='This will remove you from the hydration list.')
             embed.add_field(name='!hydrate timer "time"', value='This will change the time in minutes between hydration reminders.')
+            embed.add_field(name='!hydrate channel <channel-name>', value="This will change the channel the bot will post in")
             await message.channel.send(content=None, embed=embed) # An embed of all the commands
 
         if msg.startswith('stop'):
@@ -101,6 +108,24 @@ async def on_message(message):
                 usr_temp_time[message.author] = msg[start:end] #adds the new timing to the temp dict
                 await message.channel.send('{}, is {} the correct time? \nPlease reply "Yes" to confirm'
                                            .format(message.author.name, msg[start:end]))
+        if msg.startswith('channel'):
+            userRoles = message.author.roles
+            admin_bools = [role.permissions.administrator for role in userRoles if role.permissions.administrator is True][0]
+
+            if admin_bools:
+                channel = msg.replace('channel', '').strip()
+                if channel in [str(x) for x in message.guild.channels]:
+                    channel = [channe for channe in message.guild.channels if str(channe) == channel][0]
+                    guild_channel[message.guild] = channel
+                    bot.update_guild(str(message.guild), str(channel))
+
+                    await message.channel.send(f"The bot will now send notifcations to {channel.name}")
+                else:
+                    await message.channel.send(f"The channel {channel}, either doesn't exist or there is a typo.")
+            else:
+                await message.channel.send(f"{message.author.name}, I'm afraid you do not have permission to use this command.")
+
+
 
     if message.author in usr_temp_time.keys():
         if message.content.lower().startswith('yes'): #If the message is yes and the author is in the temp list then add to user timing
