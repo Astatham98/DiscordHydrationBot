@@ -1,0 +1,1 @@
+Worker: python log.py
