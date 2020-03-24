@@ -74,14 +74,20 @@ class databse_bot():
         sql = ''' INSERT INTO bot(user,messaged,user_time,blocked)
                   VALUES(?,?,?,?) '''
         cur = conn.cursor()
-        cur.execute(sql, task)
+        try:
+            cur.execute(sql, task)
+        except sqlite3.IntegrityError as e:
+            pass
         return cur.lastrowid
 
     def create_guild(self, conn, task):
 
         sql = ''' INSERT INTO guilds(guild,channel) VALUES(?,?) '''
         cur = conn.cursor()
-        cur.execute(sql, task)
+        try:
+            cur.execute(sql, task)
+        except sqlite3.IntegrityError as e:
+            pass
         return cur.lastrowid
 
     def insert_values_guild(self, values):
