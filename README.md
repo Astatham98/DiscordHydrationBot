@@ -4,7 +4,7 @@ https://discordapp.com/api/oauth2/authorize?client_id=685681623546593295&permiss
 
 ## ToDO
 - [ ] Add a debug tool
-- [ ] Send dm's to new users
+- [x] Send dm's to new users
 
 # Version 1.0
 * Ability to change timings between notifications
@@ -16,3 +16,6 @@ https://discordapp.com/api/oauth2/authorize?client_id=685681623546593295&permiss
 * Fixed issues with not working in multiple servers
 * Refactored to using commands.Bot instead of client
 * Added more error protection
+    ## Version 1.11
+    * Fixed issue with bot not changing channel
+    * Added new users getting a dm from the bot

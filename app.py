@@ -95,10 +95,14 @@ async def start_timer():
         to_change = {}
         for user, time in currently_playing.items():  # Iterates through the playing players
             print(user, time)
+            print([(key.name, val.name) for key, val in guild_channel.items()])
             if original_time.get(user, 60) != user_timing.get(user, 60):
                 original_time[user] = user_timing.get(user, 60)  # Changes the original timer to the current one
                 # Changes the user timer and subtracts 1 for the minute that would go by
-                to_change[user] = user_timing.get(user, 60) - 1
+                to_change[user] = int(user_timing.get(user, 60)) - 1
+
+            if original_guild.get(user.guild) != guild_channel.get(user.guild):
+                original_guild[user.guild] = guild_channel.get(user.guild)
 
             if time == 0:
                 channel = guild_channel.get(user.guild)
