@@ -226,6 +226,13 @@ async def on_message(message):
             await message.channel.send('Please try the command again')
     await bot.process_commands(message)
 
+
+@bot.event
+async def on_member_join(member):
+    guild = member.guild
+    await message_users([member], guild)
+
+
 bot.add_command(help)
 bot.add_command(stop)
 bot.add_command(timer)
